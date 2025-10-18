@@ -1,0 +1,32 @@
+# Global variables
+project_name: "terralambda"
+aws_region: "us-east-1"
+terraform_dir: "terraform"
+lambda_dir: "lambda"
+
+# Default tags
+default_tags:
+  Project: "{{ project_name }}"
+  ManagedBy: "ansible"
+  Environment: "{{ env_name | default('dev') }}"
+
+# Lambda configuration
+lambda_config:
+  function_name: "{{ project_name }}-{{ env_name | default('dev') }}"
+  handler: "bootstrap"
+  runtime: "provided.al2023"
+  timeout: 30
+  memory_size: 256
+  log_retention_days: 7
+
+# API Gateway configuration
+api_gateway_config:
+  enabled: true
+  cors_allowed_origins:
+    - "*"
+
+# Monitoring configuration
+monitoring_config:
+  enable_alarms: true
+  error_threshold: 5
+  duration_threshold_percent: 80

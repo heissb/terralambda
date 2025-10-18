@@ -1,0 +1,44 @@
+---
+- name: Initialize Terraform workspace
+  command: terraform workspace select {{ terraform_workspace }}
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: workspace_result
+  failed_when: false
+
+- name: Create Terraform workspace if it doesn't exist
+  command: terraform workspace new {{ terraform_workspace }}
+  args:
+    chdir: "{{ terraform_dir }}"
+  when: workspace_result.rc != 0
+
+- name: Initialize Terraform
+  command: terraform init
+  args:
+    chdir: "{{ terraform_dir }}"
+
+- name: Create Terraform variables file
+  template:
+    src: terraform.tfvars.j2
+    dest: "{{ terraform_dir }}/{{ terraform_workspace }}.tfvars"
+    mode: '0644'
+
+- name: Plan Terraform changes
+  command: terraform plan -var-file="{{ terraform_workspace }}.tfvars"
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: plan_result
+
+- name: Display Terraform plan
+  debug:
+    var: plan_result.stdout_lines
+
+- name: Apply Terraform changes
+  command: terraform apply -auto-approve -var-file="{{ terraform_workspace }}.tfvars"
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: apply_result
+
+- name: Display Terraform apply results
+  debug:
+    var: apply_result.stdout_lines

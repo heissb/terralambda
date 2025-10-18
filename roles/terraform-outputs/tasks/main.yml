@@ -1,0 +1,18 @@
+---
+- name: Get Terraform outputs
+  command: terraform output -json
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: terraform_outputs
+  failed_when: false
+
+- name: Display Terraform outputs
+  debug:
+    msg: "Terraform Outputs:"
+  when: terraform_outputs.rc == 0
+
+- name: Parse and display individual outputs
+  debug:
+    msg: "{{ item.key }}: {{ item.value.value }}"
+  loop: "{{ terraform_outputs.json | dict2items }}"
+  when: terraform_outputs.rc == 0

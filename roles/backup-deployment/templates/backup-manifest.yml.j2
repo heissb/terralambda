@@ -1,0 +1,17 @@
+backup_info:
+  name: "{{ backup_name }}"
+  timestamp: "{{ ansible_date_time.iso8601 }}"
+  environment: "{{ env_name }}"
+  project: "{{ project_name }}"
+  terraform_workspace: "{{ terraform_workspace }}"
+
+files:
+  terraform_state: "{{ 'terraform.tfstate' if terraform_state_exists.stat.exists | default(false) else 'N/A' }}"
+  lambda_function: "{{ 'lambda_function.zip' if lambda_zip_exists.stat.exists | default(false) else 'N/A' }}"
+
+restore_instructions:
+  - "To restore this backup:"
+  - "1. Copy terraform.tfstate back to terraform/ directory"
+  - "2. Copy lambda_function.zip back to terraform/ directory"
+  - "3. Run: terraform workspace select {{ terraform_workspace }}"
+  - "4. Run: terraform plan to verify state"

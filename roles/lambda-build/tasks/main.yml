@@ -1,0 +1,43 @@
+---
+- name: Clean previous build artifacts
+  file:
+    path: "{{ lambda_output_file }}"
+    state: absent
+
+- name: Clean previous bootstrap binary
+  file:
+    path: "{{ lambda_source_dir }}/bootstrap"
+    state: absent
+
+- name: Build Lambda function
+  command: >
+    GOOS=linux GOARCH=amd64 CGO_ENABLED=0 
+    go build -tags lambda.norpc -o bootstrap main.go
+  args:
+    chdir: "{{ lambda_source_dir }}"
+  register: build_result
+
+- name: Display build results
+  debug:
+    msg: "Lambda function built successfully"
+
+- name: Create Lambda deployment package
+  archive:
+    path: "{{ lambda_source_dir }}"
+    dest: "{{ lambda_output_file }}"
+    format: zip
+    exclude_path:
+      - "{{ lambda_source_dir }}/.git"
+      - "{{ lambda_source_dir }}/*.md"
+      - "{{ lambda_source_dir }}/test*"
+
+- name: Display package information
+  stat:
+    path: "{{ lambda_output_file }}"
+  register: package_info
+
+- name: Show package details
+  debug:
+    msg: 
+      - "Package created: {{ lambda_output_file }}"
+      - "Size: {{ (package_info.stat.size / 1024 / 1024) | round(2) }} MB"

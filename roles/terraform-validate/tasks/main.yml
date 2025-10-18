@@ -1,0 +1,21 @@
+---
+- name: Change to terraform directory and validate
+  shell: |
+    cd {{ terraform_directory }}
+    terraform validate
+  register: validate_result
+
+- name: Display validation results
+  debug:
+    msg: "Terraform validation: {{ 'PASSED' if validate_result.rc == 0 else 'FAILED' }}"
+  when: validate_result.stdout_lines | length > 0
+
+- name: Show validation output
+  debug:
+    var: validate_result.stdout_lines
+  when: validate_result.stdout_lines | length > 0
+
+- name: Fail if validation failed
+  fail:
+    msg: "Terraform validation failed"
+  when: validate_result.rc != 0

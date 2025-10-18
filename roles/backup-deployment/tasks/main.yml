@@ -1,0 +1,43 @@
+---
+- name: Create backup directory
+  file:
+    path: "backups/{{ backup_name }}"
+    state: directory
+    mode: '0755'
+
+- name: Backup Terraform state
+  copy:
+    src: "{{ terraform_dir }}/terraform.tfstate"
+    dest: "backups/{{ backup_name }}/terraform.tfstate"
+    remote_src: yes
+  when: terraform_state_exists.stat.exists | default(false)
+
+- name: Check if Terraform state exists
+  stat:
+    path: "{{ terraform_dir }}/terraform.tfstate"
+  register: terraform_state_exists
+
+- name: Backup Lambda function code
+  copy:
+    src: "{{ terraform_dir }}/lambda_function.zip"
+    dest: "backups/{{ backup_name }}/lambda_function.zip"
+    remote_src: yes
+  when: lambda_zip_exists.stat.exists | default(false)
+
+- name: Check if Lambda zip exists
+  stat:
+    path: "{{ terraform_dir }}/lambda_function.zip"
+  register: lambda_zip_exists
+
+- name: Create backup manifest
+  template:
+    src: backup-manifest.yml.j2
+    dest: "backups/{{ backup_name }}/manifest.yml"
+    mode: '0644'
+
+- name: Display backup information
+  debug:
+    msg:
+      - "Backup created: backups/{{ backup_name }}"
+      - "Timestamp: {{ ansible_date_time.iso8601 }}"
+      - "Environment: {{ environment }}"

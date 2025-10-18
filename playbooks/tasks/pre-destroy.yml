@@ -1,0 +1,14 @@
+---
+- name: Create final backup before destruction
+  include_role:
+    name: backup-deployment
+  vars:
+    backup_name: "{{ lambda_config.function_name }}-final-{{ ansible_date_time.epoch }}"
+    terraform_dir: "{{ terraform_dir }}"
+
+- name: Display resources that will be destroyed
+  include_role:
+    name: terraform-list-resources
+  vars:
+    terraform_dir: "{{ terraform_dir }}"
+    terraform_workspace: "{{ terraform_workspace }}"

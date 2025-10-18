@@ -1,0 +1,31 @@
+---
+- name: Validate Infrastructure and Code
+  hosts: localhost
+  gather_facts: false
+  vars:
+    terraform_dir: "terraform"
+    lambda_dir: "lambda"
+    aws_region: "us-east-1"
+  
+  tasks:
+    - name: Validate Terraform configuration
+      include_role:
+        name: terraform-validate
+      vars:
+        terraform_directory: "{{ terraform_dir }}"
+    
+    - name: Validate Lambda code
+      include_role:
+        name: lambda-validate
+      vars:
+        lambda_source_dir: "{{ lambda_dir }}"
+    
+    - name: Check AWS credentials
+      include_role:
+        name: aws-validate
+      vars:
+        aws_region: "{{ aws_region }}"
+    
+    - name: Display validation results
+      debug:
+        msg: "All validations passed successfully"

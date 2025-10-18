@@ -1,0 +1,53 @@
+---
+- name: Deploy Lambda Function
+  hosts: localhost
+  gather_facts: false
+  vars:
+    terraform_workspace: "{{ terraform_workspace | default('dev') }}"
+  
+  tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "Deploying {{ lambda_config.function_name }}"
+          - "Environment: {{ env_name }}"
+          - "Terraform workspace: {{ terraform_workspace }}"
+          - "AWS Region: {{ aws_region }}"
+    
+    - name: Include pre-deployment tasks
+      include_tasks: tasks/pre-deploy.yml
+    
+    - name: Build Lambda function
+      include_role:
+        name: lambda-build
+      vars:
+        lambda_source_dir: "{{ lambda_dir }}"
+        lambda_output_file: "{{ terraform_dir }}/lambda_function.zip"
+    
+    - name: Deploy infrastructure with Terraform
+      include_role:
+        name: terraform-deploy
+      vars:
+        terraform_dir: "{{ terraform_dir }}"
+        terraform_workspace: "{{ terraform_workspace }}"
+        terraform_vars:
+          function_name: "{{ lambda_config.function_name }}"
+          handler: "{{ lambda_config.handler }}"
+          runtime: "{{ lambda_config.runtime }}"
+          timeout: "{{ lambda_config.timeout }}"
+          memory_size: "{{ lambda_config.memory_size }}"
+          log_retention_days: "{{ lambda_config.log_retention_days }}"
+          enable_api_gateway: "{{ api_gateway_config.enabled }}"
+          cors_allowed_origins: "{{ api_gateway_config.cors_allowed_origins }}"
+          enable_alarms: "{{ monitoring_config.enable_alarms }}"
+          tags: "{{ default_tags }}"
+    
+    - name: Include post-deployment tasks
+      include_tasks: tasks/post-deploy.yml
+    
+    - name: Display deployment results
+      include_role:
+        name: terraform-outputs
+      vars:
+        terraform_dir: "{{ terraform_dir }}"
+        terraform_workspace: "{{ terraform_workspace }}"

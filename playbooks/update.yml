@@ -1,0 +1,36 @@
+---
+- name: Update Lambda Function Code
+  hosts: localhost
+  gather_facts: false
+  vars:
+    terraform_workspace: "{{ terraform_workspace | default('dev') }}"
+  
+  tasks:
+    - name: Display update information
+      debug:
+        msg:
+          - "Updating {{ lambda_config.function_name }}"
+          - "Environment: {{ env_name }}"
+          - "Terraform workspace: {{ terraform_workspace }}"
+    
+    - name: Build updated Lambda function
+      include_role:
+        name: lambda-build
+      vars:
+        lambda_source_dir: "{{ lambda_dir }}"
+        lambda_output_file: "{{ terraform_dir }}/lambda_function.zip"
+    
+    - name: Update Lambda function code
+      include_role:
+        name: lambda-update
+      vars:
+        terraform_dir: "{{ terraform_dir }}"
+        terraform_workspace: "{{ terraform_workspace }}"
+        function_name: "{{ lambda_config.function_name }}"
+    
+    - name: Verify function update
+      include_role:
+        name: lambda-verify
+      vars:
+        function_name: "{{ lambda_config.function_name }}"
+        aws_region: "{{ aws_region }}"

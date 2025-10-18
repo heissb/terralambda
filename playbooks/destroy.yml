@@ -1,0 +1,45 @@
+---
+- name: Destroy Lambda Infrastructure
+  hosts: localhost
+  gather_facts: false
+  vars:
+    terraform_workspace: "{{ terraform_workspace | default('dev') }}"
+  
+  tasks:
+    - name: Display destruction information
+      debug:
+        msg:
+          - "Destroying {{ lambda_config.function_name }}"
+          - "Environment: {{ env_name }}"
+          - "Terraform workspace: {{ terraform_workspace }}"
+          - "WARNING: This will destroy all infrastructure!"
+    
+    - name: Confirm destruction
+      pause:
+        prompt: "Are you sure you want to destroy the infrastructure? Type 'yes' to continue"
+      register: destroy_confirm
+      when: not auto_confirm_destroy | default(false)
+    
+    - name: Fail if not confirmed
+      fail:
+        msg: "Destruction cancelled by user"
+      when: 
+        - not auto_confirm_destroy | default(false)
+        - destroy_confirm.user_input != 'yes'
+    
+    - name: Include pre-destroy tasks
+      include_tasks: tasks/pre-destroy.yml
+    
+    - name: Destroy infrastructure with Terraform
+      include_role:
+        name: terraform-destroy
+      vars:
+        terraform_dir: "{{ terraform_dir }}"
+        terraform_workspace: "{{ terraform_workspace }}"
+    
+    - name: Include post-destroy tasks
+      include_tasks: tasks/post-destroy.yml
+    
+    - name: Display destruction results
+      debug:
+        msg: "Infrastructure destroyed successfully"

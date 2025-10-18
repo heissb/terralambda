@@ -1,0 +1,39 @@
+---
+- name: Initialize Terraform
+  command: terraform init
+  args:
+    chdir: "{{ terraform_dir }}"
+
+- name: Select Terraform workspace
+  command: terraform workspace select {{ terraform_workspace }}
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: workspace_result
+  failed_when: false
+
+- name: Fail if workspace doesn't exist
+  fail:
+    msg: "Terraform workspace '{{ terraform_workspace }}' does not exist"
+  when: workspace_result.rc != 0
+
+- name: Plan Terraform destruction
+  command: terraform plan -destroy -var-file="{{ terraform_workspace }}.tfvars"
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: destroy_plan
+  failed_when: false
+
+- name: Display destruction plan
+  debug:
+    var: destroy_plan.stdout_lines
+  when: destroy_plan.rc == 0
+
+- name: Apply Terraform destruction
+  command: terraform destroy -auto-approve -var-file="{{ terraform_workspace }}.tfvars"
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: destroy_result
+
+- name: Display destruction results
+  debug:
+    var: destroy_result.stdout_lines

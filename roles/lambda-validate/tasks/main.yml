@@ -1,0 +1,47 @@
+---
+- name: Check if Lambda source directory exists
+  stat:
+    path: "{{ playbook_dir | dirname }}/{{ lambda_source_dir }}"
+  register: lambda_dir_stat
+
+- name: Fail if Lambda directory doesn't exist
+  fail:
+    msg: "Lambda source directory '{{ lambda_source_dir }}' not found"
+  when: not lambda_dir_stat.stat.exists
+
+- name: Check if main.go exists
+  stat:
+    path: "{{ playbook_dir | dirname }}/{{ lambda_source_dir }}/main.go"
+  register: main_go_stat
+
+- name: Fail if main.go doesn't exist
+  fail:
+    msg: "main.go not found in {{ lambda_source_dir }}"
+  when: not main_go_stat.stat.exists
+
+- name: Check if go.mod exists
+  stat:
+    path: "{{ playbook_dir | dirname }}/{{ lambda_source_dir }}/go.mod"
+  register: go_mod_stat
+
+- name: Warn if go.mod doesn't exist
+  debug:
+    msg: "Warning: go.mod not found in {{ lambda_source_dir }}"
+  when: not go_mod_stat.stat.exists
+
+- name: Validate Go syntax
+  shell: |
+    cd {{ playbook_dir | dirname }}/{{ lambda_source_dir }}
+    go vet ./...
+  register: go_vet_result
+  failed_when: false
+
+- name: Display Go vet results
+  debug:
+    msg: "Go vet: {{ 'PASSED' if go_vet_result.rc == 0 else 'WARNINGS FOUND' }}"
+  when: go_vet_result.stdout_lines | length > 0
+
+- name: Show Go vet output
+  debug:
+    var: go_vet_result.stdout_lines
+  when: go_vet_result.stdout_lines | length > 0

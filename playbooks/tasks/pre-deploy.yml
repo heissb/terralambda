@@ -1,0 +1,45 @@
+---
+- name: Check if Go is installed
+  command: go version
+  register: go_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if Go is not installed
+  fail:
+    msg: "Go is required but not installed. Please install Go to build the Lambda function."
+  when: go_check.rc != 0
+
+- name: Check if Terraform is installed
+  command: terraform version
+  register: terraform_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if Terraform is not installed
+  fail:
+    msg: "Terraform is required but not installed. Please install Terraform."
+  when: terraform_check.rc != 0
+
+- name: Check if AWS CLI is configured
+  command: aws sts get-caller-identity
+  register: aws_check
+  failed_when: false
+  changed_when: false
+
+- name: Fail if AWS CLI is not configured
+  fail:
+    msg: "AWS CLI is not configured or credentials are invalid. Please configure AWS credentials."
+  when: aws_check.rc != 0
+
+- name: Display AWS identity
+  debug:
+    msg: "AWS Identity: {{ aws_check.stdout }}"
+  when: aws_check.rc == 0
+
+- name: Create backup of current deployment
+  include_role:
+    name: backup-deployment
+  vars:
+    backup_name: "{{ lambda_config.function_name }}-{{ ansible_date_time.epoch }}"
+    terraform_dir: "{{ terraform_dir }}"

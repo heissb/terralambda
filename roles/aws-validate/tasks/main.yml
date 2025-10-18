@@ -1,0 +1,30 @@
+---
+- name: Check AWS credentials
+  command: aws sts get-caller-identity
+  register: aws_identity
+  failed_when: false
+
+- name: Fail if AWS credentials are not configured
+  fail:
+    msg: "AWS credentials not configured or invalid"
+  when: aws_identity.rc != 0
+
+- name: Display AWS identity
+  debug:
+    msg: "AWS Identity: {{ aws_identity.json.Arn }}"
+  when: aws_identity.rc == 0
+
+- name: Check AWS region access
+  command: aws ec2 describe-regions --region-names {{ aws_region }}
+  register: region_check
+  failed_when: false
+
+- name: Fail if region is not accessible
+  fail:
+    msg: "AWS region '{{ aws_region }}' is not accessible"
+  when: region_check.rc != 0
+
+- name: Display region validation
+  debug:
+    msg: "AWS region '{{ aws_region }}' is accessible"
+  when: region_check.rc == 0

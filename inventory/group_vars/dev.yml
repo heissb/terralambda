@@ -1,0 +1,20 @@
+# Development environment variables
+env_name: "dev"
+terraform_workspace: "dev"
+
+# Development-specific overrides
+lambda_config:
+  function_name: "{{ project_name }}-dev"
+  timeout: 15
+  memory_size: 128
+
+# Development monitoring (less strict)
+monitoring_config:
+  enable_alarms: false
+
+# Development tags
+default_tags:
+  Project: "{{ project_name }}"
+  ManagedBy: "ansible"
+  Environment: "dev"
+  Stage: "development"

@@ -1,0 +1,24 @@
+# Production environment variables
+env_name: "prod"
+terraform_workspace: "prod"
+
+# Production-specific overrides
+lambda_config:
+  function_name: "{{ project_name }}-prod"
+  timeout: 60
+  memory_size: 512
+  log_retention_days: 30
+
+# Production monitoring (strict)
+monitoring_config:
+  enable_alarms: true
+  error_threshold: 3
+  duration_threshold_percent: 70
+
+# Production tags
+default_tags:
+  Project: "{{ project_name }}"
+  ManagedBy: "ansible"
+  Environment: "prod"
+  Stage: "production"
+  CostCenter: "engineering"

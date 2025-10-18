@@ -1,0 +1,50 @@
+---
+- name: Get Lambda function information
+  command: aws lambda get-function --function-name {{ function_name }} --region {{ aws_region }}
+  register: function_info
+  failed_when: false
+
+- name: Fail if function doesn't exist
+  fail:
+    msg: "Lambda function '{{ function_name }}' not found"
+  when: function_info.rc != 0
+
+- name: Display function information
+  debug:
+    msg:
+      - "Function ARN: {{ function_info.json.FunctionArn }}"
+      - "Function URL: {{ function_info.json.FunctionUrl | default('N/A') }}"
+      - "Status: {{ function_info.json.State }}"
+      - "Last Modified: {{ function_info.json.LastModified }}"
+  when: function_info.rc == 0
+
+- name: Test function with sample payload
+  command: >
+    aws lambda invoke 
+    --function-name {{ function_name }}
+    --region {{ aws_region }}
+    --payload '{"test": "true"}'
+    /tmp/lambda-verify-response.json
+  register: test_result
+  failed_when: false
+
+- name: Display test results
+  debug:
+    msg: "Function test completed with exit code: {{ test_result.rc }}"
+  when: test_result.rc == 0
+
+- name: Show test response
+  slurp:
+    src: /tmp/lambda-verify-response.json
+  register: test_response
+  when: test_result.rc == 0
+
+- name: Display test response content
+  debug:
+    msg: "Test response: {{ test_response.content | b64decode }}"
+  when: test_result.rc == 0 and test_response is defined
+
+- name: Clean up test file
+  file:
+    path: /tmp/lambda-verify-response.json
+    state: absent

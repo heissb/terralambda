@@ -1,0 +1,23 @@
+---
+- name: List Terraform resources
+  command: terraform state list
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: resource_list
+  failed_when: false
+
+- name: Display resources that will be destroyed
+  debug:
+    msg: "Resources to be destroyed:"
+  when: resource_list.rc == 0
+
+- name: List each resource
+  debug:
+    msg: "- {{ item }}"
+  loop: "{{ resource_list.stdout_lines }}"
+  when: resource_list.rc == 0 and resource_list.stdout_lines | length > 0
+
+- name: Display no resources message
+  debug:
+    msg: "No resources found in Terraform state"
+  when: resource_list.rc == 0 and resource_list.stdout_lines | length == 0

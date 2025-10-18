@@ -1,0 +1,16 @@
+---
+- name: Clean up local files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ terraform_dir }}/lambda_function.zip"
+    - "{{ terraform_dir }}/.terraform"
+    - "{{ terraform_dir }}/.terraform.lock.hcl"
+
+- name: Display destruction summary
+  debug:
+    msg:
+      - "Infrastructure destroyed successfully!"
+      - "Environment: {{ env_name }}"
+      - "Backup created: {{ backup_name }}"

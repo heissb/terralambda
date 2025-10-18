@@ -1,0 +1,28 @@
+---
+- name: Update Lambda function code
+  command: aws lambda update-function-code --function-name {{ function_name }} --zip-file fileb://{{ terraform_dir }}/lambda_function.zip --region {{ aws_region }}
+  register: update_result
+
+- name: Display update results
+  debug:
+    msg: "Lambda function updated successfully"
+  when: update_result.rc == 0
+
+- name: Display update error
+  debug:
+    msg: "Failed to update Lambda function: {{ update_result.stderr }}"
+  when: update_result.rc != 0
+
+- name: Wait for function to be ready
+  pause:
+    seconds: 5
+
+- name: Get updated function information
+  command: aws lambda get-function --function-name {{ function_name }} --region {{ aws_region }}
+  register: function_info
+  failed_when: false
+
+- name: Display function status
+  debug:
+    msg: "Function status: {{ function_info.json.State }}"
+  when: function_info.rc == 0
